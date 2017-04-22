@@ -426,25 +426,25 @@ export default {
   data () {
     function hours () {
       let list = []
-      let hour = 24
-      while (hour > 0) {
-        hour--
+      let hour = 0
+      while (hour < 24) {
         list.push({
           checked: false,
           value: hour < 10 ? '0' + hour : hour
         })
+        hour++
       }
       return list
     }
     function mins () {
       let list = []
-      let min = 60
-      while (min > 0) {
-        min--
+      let min = 0
+      while (min < 60) {
         list.push({
           checked: false,
           value: min < 10 ? '0' + min : min
         })
+        min++
       }
       return list
     }
