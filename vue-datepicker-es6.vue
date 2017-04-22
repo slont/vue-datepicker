@@ -262,9 +262,9 @@ table {
   text-align: right;
   padding-right: 20px;
 }
-.button-box span {
+.button-box a {
   cursor: pointer;
-  padding: 10px 20px;
+  padding: 0 16px;
 }
 .watch-box {
   height: 100%;
@@ -364,8 +364,12 @@ table {
           </div>
         </div>
         <div class="button-box">
-          <span @click="showInfo.check=false">{{option.buttons? option.buttons.cancel : 'Cancel' }}</span>
-          <span @click="picked">{{option.buttons? option.buttons.ok : 'Ok'}}</span>
+          <a :class="option.buttons.cancel.class? option.buttons.cancel.class : ''" @click="showInfo.check=false">
+            {{option.buttons.cancel.name? option.buttons.cancel.name : 'Cancel' }}
+          </a>
+          <a :class="option.buttons.ok.class? option.buttons.ok.class : ''" @click="picked">
+            {{option.buttons.ok.name? option.buttons.ok.name : 'Ok'}}
+          </a>
         </div>
       </div>
     </div>
@@ -408,8 +412,14 @@ export default {
           },
           placeholder: 'when?',
           buttons: {
-            ok: 'OK',
-            cancel: 'Cancel'
+            ok: {
+              name: 'OK',
+              class: ''
+            },
+            cancel: {
+              name: 'Cancel',
+              class: ''
+            }
           },
           overlayOpacity: 0.5,
           dismissible: true
