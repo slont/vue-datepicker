@@ -502,7 +502,7 @@ export default {
       this.displayInfo.month = this.library.month[moment(this.checked.currentMoment).month()]
       let days = []
       let currentMoment = this.checked.currentMoment
-      let firstDay = moment(currentMoment).date(1).day()
+      let firstDay = moment(currentMoment).date(this.option.firstDay || 1).day()
       // gettting previous and next month
       // let currentMonth = moment(currentMoment)
       let previousMonth = moment(currentMoment)
