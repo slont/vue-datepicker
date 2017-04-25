@@ -291,6 +291,15 @@
     font-size: 36px;
     cursor: pointer;
   }
+  .hour-item.unavailable,
+  .min-item.unavailable {
+    color: #ccc;
+    cursor: not-allowed;
+  }
+  .hour-item.unavailable:hover,
+  .min-item.unavailable:hover {
+    background: none;
+  }
   .hour-item:hover,
   .min-item:hover {
     background: #E3E3E3;
@@ -353,12 +362,14 @@
               <div class="hour-box">
                 <div class="mui-pciker-rule mui-pciker-rule-ft"></div>
                 <ul>
-                  <li class="hour-item" v-for="hitem in hours" @click="setTime('hour', hitem, hours)" :class="{'active':hitem.checked}">{{hitem.value}}</li>
+                  <li class="hour-item" v-for="hitem in hours" @click="setTime('hour', hitem, hours)"
+                      :class="{'active':hitem.checked,'unavailable':hitem.unavailable}">{{hitem.value}}</li>
                 </ul>
               </div>
               <div class="min-box">
                 <div class="mui-pciker-rule mui-pciker-rule-ft"></div>
-                <div class="min-item" v-for="mitem in mins" @click="setTime('min',mitem, mins)" :class="{'active':mitem.checked}">{{mitem.value}}</div>
+                <div class="min-item" v-for="mitem in mins" @click="setTime('min',mitem, mins)"
+                     :class="{'active':mitem.checked,'unavailable':mitem.unavailable}">{{mitem.value}}</div>
               </div>
             </div>
           </div>
@@ -479,14 +490,19 @@
         checked: {
           oldtime: '',
           currentMoment: null,
-          year: '',
-          month: '',
-          day: '',
-          hour: '00',
-          min: '00'
+          year: moment(this.date.time).year() || '',
+          month: moment(this.date.time).month() || '',
+          day: moment(this.date.time).date() || '',
+          hour: moment(this.date.time).hour() || '00',
+          min: moment(this.date.time).minute() || '00'
         },
         dayList: [],
         selectedDays: []
+      }
+    },
+    computed: {
+      ctime () {
+        return this.checked.year + '-' + this.checked.month + '-' + this.checked.day + ' ' + this.checked.hour + ':' + this.checked.min
       }
     },
     methods: {
@@ -594,17 +610,93 @@
               day.unavailable = true
             }
           })
+          if ('min' === this.type) {
+            this.limitFromToHourMin()
+          }
         }
         return days
       },
+      limitFromToHourMin () {
+        for (const item of this.hours) {
+          item.unavailable = false
+        }
+        for (const item of this.mins) {
+          item.unavailable = false
+        }
+        const date = moment(this.ctime)
+        for (const li of this.limit) {
+          const from = li.from ? moment(li.from) : null
+          const to = li.to ? moment(li.to) : null
+          if (from && from.date() === date.date()) {
+            const hFrom = from.hour() || 0
+            const mFrom = from.minute() || 0
+            // hour reset
+            if (Number(this.checked['hour']) < hFrom) {
+              this.hours[Number(this.checked['hour'])].checked = false
+              this.hours[hFrom].checked = true
+              this.checked['hour'] = hFrom
+            }
+            for (const item of this.hours) {
+              item.unavailable = Number(item.value) < hFrom
+            }
+            if (hFrom === Number(this.checked.hour)) {
+              for (const item of this.mins) {
+                item.unavailable = Number(item.value) < mFrom
+              }
+              // minute reset
+              if (Number(this.checked['min']) < mFrom) {
+                this.mins[Number(this.checked['min'])].checked = false
+                this.mins[mFrom].checked = true
+                this.checked['min'] = mFrom
+              }
+            } else if (hFrom < Number(this.checked.hour)) {
+              for (const item of this.mins) {
+                item.unavailable = false
+              }
+            }
+          }
+          if (to && to.date() === date.date()) {
+            const hTo = to.hour() || 23
+            const mTo = to.minute() || 59
+            // hour reset
+            if (hTo < Number(this.checked['hour'])) {
+              this.hours[Number(this.checked['hour'])].checked = false
+              this.hours[hTo].checked = true
+              this.checked['hour'] = hTo
+            }
+            for (const item of this.hours) {
+              item.unavailable = hTo < Number(item.value)
+            }
+            if (Number(this.checked.hour) === hTo) {
+              for (const item of this.mins) {
+                item.unavailable = mTo < Number(item.value)
+              }
+              // minute reset
+              if (mTo < Number(this.checked['min'])) {
+                this.mins[Number(this.checked['min'])].checked = false
+                this.mins[mTo].checked = true
+                this.checked['min'] = mTo
+              }
+            } else if (Number(this.checked.hour) < hTo) {
+              for (const item of this.mins) {
+                item.unavailable = false
+              }
+            }
+          }
+        }
+      },
       getLimitCondition (limit, day) {
-        let tmpMoment = moment(day.moment.year() + '-' + this.pad(day.moment.month()+1) + '-' + this.pad(day.value))
+        const tmpMoment = moment(day.moment.year() + '-' + this.pad(day.moment.month() + 1) + '-' + this.pad(day.value))
+        const from = moment(limit.from)
+        if (from) {
+          from.add(-1, 'days')
+        }
         if (limit.from && !limit.to) {
-          return !tmpMoment.isAfter(limit.from)
+          return !tmpMoment.isAfter(from)
         } else if (!limit.from && limit.to) {
           return !tmpMoment.isBefore(limit.to)
         } else {
-          return !tmpMoment.isBetween(limit.from, limit.to)
+          return !tmpMoment.isBetween(from, limit.to)
         }
       },
       checkDay (obj) {
@@ -636,6 +728,7 @@
             this.picked()
             break
           case 'min':
+            this.limitFromToHourMin()
             this.showOne('hour')
             // shift activated time items to visible position.
             this.shiftActTime()
@@ -735,12 +828,18 @@
         this.showInfo.check = true
       },
       setTime (type, obj, list) {
+        if (obj.unavailable || obj.value === '') {
+          return false
+        }
         for (let item of list) {
           item.checked = false
           if (item.value === obj.value) {
             item.checked = true
             this.checked[type] = item.value
           }
+        }
+        for (const li of this.limit) {
+          this.limitFromToHourMin(type, li)
         }
       },
       picked () {
