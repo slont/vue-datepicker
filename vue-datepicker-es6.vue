@@ -519,7 +519,7 @@
         if (time === undefined || !Date.parse(time)) {
           this.checked.currentMoment = moment()
         } else {
-          this.checked.currentMoment = moment(time, this.option.format)
+          this.checked.currentMoment = moment(moment(time), this.option.format)
         }
         this.showOne('day')
         this.checked.year = moment(this.checked.currentMoment).format('YYYY')
